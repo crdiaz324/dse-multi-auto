@@ -185,7 +185,7 @@ module "dse_cluster" {
   instance_count              = "${var.node_count}"
   associate_public_ip_address = "false"
 
-  ami                    = "${var.ami["amazon-linux"]}"
+  ami                    = "${var.ami["coreos"]}"
   instance_type          = "t2.micro"
   key_name               = "${aws_key_pair.ec2key.key_name}"
   monitoring             = false
@@ -211,7 +211,7 @@ resource "null_resource" "provision_cluster_nodes_hosts_file" {
   connection {
     type        = "ssh"
     host        = "${element(module.dse_cluster.public_ip, count.index)}"
-    user        = "ec2-user"
+    user        = "core"
     private_key = "${file(var.private_key_path)}"
   }
 

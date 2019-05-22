@@ -47,7 +47,7 @@ resource "aws_instance" "this" {
     inline = [
       "touch ~/provisioned",
       "echo '${file(var.private_key_path)}' > ~/.ssh/id_rsa",
-      "echo 'export TERM='xterm-256color' >> /home/ec2-user/.bash_profile"
+      "echo 'export TERM='xterm-256color' >> ~/.bash_profile"
     ]
   }
 }
@@ -96,7 +96,7 @@ resource "aws_instance" "this_t2" {
 
   connection {
     type             = "ssh"
-    user             = "ec2-user"
+    user             = "core"
     private_key      = "${file(var.private_key_path)}"
     bastion_host     = "${var.bastion_host_ip}"
     bastion_user     = "ec2-user"
@@ -108,7 +108,7 @@ resource "aws_instance" "this_t2" {
       "touch ~/provisioned",
       "echo '${file(var.private_key_path)}' > ~/.ssh/id_rsa",
       "chmod 400 ~/.ssh/id_rsa",
-      "echo 'export TERM=xterm-256color' >> ~/.bash_profile",
+  #    "echo 'export TERM=xterm-256color' >> ~/.bash_profile",
     ]
   }
 }

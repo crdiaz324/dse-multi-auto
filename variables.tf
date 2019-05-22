@@ -72,6 +72,7 @@ variable "ami" {
     "ubuntu-18.04" = "ami-06397100adf427136"
     "amazon-linux" = "ami-0019ef04ac50be30f"
     "rhel-8"       = "ami-08949fb6466dd2cf3"
+    "coreos"       = "ami-00967fa9b13b97a7c"
   }
 
   description = "map of AMIs to use"
