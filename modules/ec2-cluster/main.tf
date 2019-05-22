@@ -43,11 +43,21 @@ resource "aws_instance" "this" {
     ignore_changes = ["private_ip", "root_block_device", "ebs_block_device"]
   }
 
+  connection {
+    type             = "ssh"
+    user             = "ec2-user"
+    private_key      = "${file(var.private_key_path)}"
+    bastion_host     = "${var.bastion_host_ip}"
+    bastion_user     = "ec2-user"
+    bastion_host_key = "${file(var.private_key_path)}"
+  }
+
   provisioner "remote-exec" {
     inline = [
       "touch ~/provisioned",
       "echo '${file(var.private_key_path)}' > ~/.ssh/id_rsa",
-      "echo 'export TERM='xterm-256color' >> /home/ec2-user/.bash_profile"
+      "chmod 400 ~/.ssh/id_rsa",
+      "echo 'export TERM=xterm-256color' >> ~/.bash_profile",
     ]
   }
 }

@@ -1,3 +1,15 @@
+# Terraform state for this envirionment
+terraform {
+  required_version = "= 0.11.13"
+
+  backend "s3" {
+    encrypt = "false"
+    region  = "us-west-1"
+    bucket  = "cdiaz-livenation"
+    key     = "terraform/terraform.tfstate"
+  }
+}
+
 #providers
 provider "aws" {
   region = "${var.region}"
@@ -186,7 +198,7 @@ module "dse_cluster" {
   associate_public_ip_address = "false"
 
   ami                    = "${var.ami["amazon-linux"]}"
-  instance_type          = "t2.micro"
+  instance_type          = "${var.instance_type["i3-2xlarge"]}"
   key_name               = "${aws_key_pair.ec2key.key_name}"
   monitoring             = false
   vpc_security_group_ids = ["${aws_security_group.sg_22.id}"]
