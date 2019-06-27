@@ -42,7 +42,7 @@ variable "name" {
 
 variable "node_count" {
   description = "Number of nodes in the cluster"
-  default     = "8"
+  default     = "6"
 }
 
 #####################################

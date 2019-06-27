@@ -17,3 +17,7 @@ output "public_instance_ip" {
 output "ips_hosts" {
   value = ["${formatlist("%v %v", module.dse_cluster.private_ip, module.dse_cluster.instance_names)}"]
 }
+
+output "loadgen_ips" {
+  value = ["${formatlist("%v %v", module.loadgen.private_ip, module.loadgen.instance_names)}"]
+}
