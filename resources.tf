@@ -1,3 +1,15 @@
+# Terraform state for this envirionment
+terraform {
+  required_version = "= 0.11.13"
+
+  backend "s3" {
+    encrypt = "false"
+    region  = "us-west-1"
+    bucket  = "cdiaz-livenation"
+    key     = "terraform/terraform.tfstate"
+  }
+}
+
 #providers
 provider "aws" {
   region = "${var.region}"
@@ -112,8 +124,8 @@ resource "aws_route_table_association" "rta_subnet_private" {
   route_table_id = "${aws_route_table.rtb_private.id}"
 }
 
-resource "aws_security_group" "sg_22" {
-  name   = "sg_22"
+resource "aws_security_group" "sg_dse" {
+  name   = "sg_dse"
   vpc_id = "${aws_vpc.vpc.id}"
 
   # SSH access from the VPC
@@ -124,12 +136,88 @@ resource "aws_security_group" "sg_22" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Port 8888 for opscenter access
+  ingress {
+    from_port   = 8888
+    to_port     = 8888
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Promethius 
+  ingress {
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 9103
+    to_port     = 9103
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # CQL access from the VPC
+  ingress {
+    from_port   = 9042
+    to_port     = 9042
+    protocol    = "tcp"
+    cidr_blocks = ["${var.cidr_vpc}"]
+  }
+
+  # internode communication from the VPC
+  ingress {
+    from_port   = 7000
+    to_port     = 7000
+    protocol    = "tcp"
+    cidr_blocks = ["${var.cidr_vpc}"]
+  }
+
+  # opscenterd communication from the VPC
+  ingress {
+    from_port   = 61620
+    to_port     = 61620
+    protocol    = "tcp"
+    cidr_blocks = ["${var.cidr_vpc}"]
+  }
+
+  # opscenter agent communication from the VPC
+  ingress {
+    from_port   = 61621
+    to_port     = 61621
+    protocol    = "tcp"
+    cidr_blocks = ["${var.cidr_vpc}"]
+  }
+
+  # outbound internet access
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  ingress {
+    from_port = -1
+    to_port = -1
+    protocol = "icmp"
+    cidr_blocks = ["${var.cidr_vpc}"]
+  }
+
+  ingress {
+    from_port   = 8609
+    to_port     = 8609
+    protocol    = "tcp"
+    cidr_blocks = ["${var.cidr_vpc}"]
+  }
+
 
   tags {
     "Environment" = "${var.environment_tag}"
@@ -145,9 +233,9 @@ resource "aws_key_pair" "ec2key" {
 
 resource "aws_instance" "bastion" {
   ami                    = "${var.ami["amazon-linux"]}"
-  instance_type          = "t2.micro"
+  instance_type          = "${var.instance_type["i3-xlarge"]}"
   subnet_id              = "${aws_subnet.subnet_public.id}"
-  vpc_security_group_ids = ["${aws_security_group.sg_22.id}"]
+  vpc_security_group_ids = ["${aws_security_group.sg_dse.id}"]
   key_name               = "${aws_key_pair.ec2key.key_name}"
 
   #lifecycle {
@@ -186,10 +274,10 @@ module "dse_cluster" {
   associate_public_ip_address = "false"
 
   ami                    = "${var.ami["amazon-linux"]}"
-  instance_type          = "t2.micro"
+  instance_type          = "${var.instance_type["i3-xlarge"]}"
   key_name               = "${aws_key_pair.ec2key.key_name}"
   monitoring             = false
-  vpc_security_group_ids = ["${aws_security_group.sg_22.id}"]
+  vpc_security_group_ids = ["${aws_security_group.sg_dse.id}"]
   subnet_id              = "${aws_subnet.subnet_private.id}"
   private_key_path       = "${var.private_key_path}"
   bastion_host_ip        = "${aws_instance.bastion.public_ip}"

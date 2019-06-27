@@ -12,7 +12,8 @@ locals {
   this_subnet_id                    = "${compact(concat(coalescelist(aws_instance.this.*.subnet_id, aws_instance.this_t2.*.subnet_id), list("")))}"
   this_credit_specification         = "${aws_instance.this_t2.*.credit_specification}"
   this_tags                         = "${coalescelist(flatten(aws_instance.this.*.tags), flatten(aws_instance.this_t2.*.tags))}"
-  this_name                         = "${aws_instance.this_t2.*.tags.Name}"
+  #this_name                         = "${aws_instance.this_t2.*.tags.Name}"
+  this_name                   = "${compact(concat(coalescelist(aws_instance.this.*.tags.Name, aws_instance.this_t2.*.tags.Name), list("")))}"
 }
 
 output "id" {
