@@ -36,13 +36,13 @@ variable "environment_tag" {
 }
 
 variable "name" {
-  default     = "livenation-tf"
+  default     = "cdiaz-tf"
   description = "The name for this deployment"
 }
 
 variable "node_count" {
   description = "Number of nodes in the cluster"
-  default     = "6"
+  default     = "3"
 }
 
 #####################################

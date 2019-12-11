@@ -5,7 +5,7 @@ terraform {
   backend "s3" {
     encrypt = "false"
     region  = "us-west-1"
-    bucket  = "cdiaz-livenation"
+    bucket  = "cdiaz-terraform"
     key     = "terraform/terraform.tfstate"
   }
 }
@@ -233,7 +233,7 @@ resource "aws_key_pair" "ec2key" {
 
 resource "aws_instance" "bastion" {
   ami                    = "${var.ami["amazon-linux"]}"
-  instance_type          = "${var.instance_type["i3-xlarge"]}"
+  instance_type          = "i3.large"
   subnet_id              = "${aws_subnet.subnet_public.id}"
   vpc_security_group_ids = ["${aws_security_group.sg_dse.id}"]
   key_name               = "${aws_key_pair.ec2key.key_name}"
