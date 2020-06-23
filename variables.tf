@@ -9,7 +9,7 @@ variable "region" {
 
 variable "availability_zone" {
   description = "availability zone to create subnet"
-  default     = "us-west-1a"
+  default     = "us-west-1b"
 }
 
 #################################################
@@ -36,13 +36,13 @@ variable "environment_tag" {
 }
 
 variable "name" {
-  default     = "cdiaz-tf"
+  default     = "dsedemo-"
   description = "The name for this deployment"
 }
 
 variable "node_count" {
   description = "Number of nodes in the cluster"
-  default     = "3"
+  default     = "1"
 }
 
 #####################################
@@ -78,14 +78,7 @@ variable "ami" {
 }
 
 variable "instance_type" {
-  default = {
-    "test-instance" = "t2.micro"
-    "m4-2xlarge"    = "m4.2xlarge"
-    "m4-4xlarge"    = "m4.4xlarge"
-    "i3-xlarge"     = "i3.xlarge"
-    "i3-2xlarge"    = "i3.2xlarge"
-  }
-
-  description = "map of instance types to use"
+  default = "i3.3xlarge" 
+  description = "instance types for both bastion and dse nodes"
 }
 

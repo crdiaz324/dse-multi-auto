@@ -102,7 +102,14 @@ resource "aws_instance" "this" {
       "sudo rpm --import https://rpm.datastax.com/rpm/repo_key",
       "sudo yum install -y dse-full",
       "sudo chown -R cassandra:cassandra /var/lib/cassandra",
-      "sudo yum update -y"
+      "sudo yum update -y",
+      "sudo sed -ci 's/# num_tokens: 128/num_tokens: 8/g' /etc/dse/cassandra/cassandra.yaml",
+      "export ip=`hostname -i` && sudo sed -ci \"s/listen_address: localhost/listen_address: $ip/g\" /etc/dse/cassandra/cassandra.yaml",
+      "export ip=`hostname -i` && sudo sed -ci \"s/# native_transport_broadcast_address: 1.2.3.4/native_transport_broadcast_address: $ip/g\" /etc/dse/cassandra/cassandra.yaml",
+      "export ip=`hostname -i` && sudo sed -ci \"s/native_transport_address: localhost/native_transport_address: 0.0.0.0/g\" /etc/dse/cassandra/cassandra.yaml",
+      "export ip=`hostname -i` && sudo sed -ci \"s/endpoint_snitch: com.datastax.bdp.snitch.DseSimpleSnitch/endpoint_snitch: GossipingPropertyFileSnitch/g\" /etc/dse/cassandra/cassandra.yaml",
+      "export ip=`hostname -i` && sudo sed -ci \"s/127.0.0.1/$ip/g\" /etc/dse/cassandra/cassandra.yaml",
+      "sudo systemctl start dse"
     ]
   }
 }

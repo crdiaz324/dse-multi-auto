@@ -4,8 +4,8 @@ terraform {
 
   backend "s3" {
     encrypt = "false"
-    region  = "us-west-1"
-    bucket  = "cdiaz-terraform"
+    region  = "us-west-2"
+    bucket  = "cdtf"
     key     = "terraform/terraform.tfstate"
   }
 }
@@ -134,6 +134,7 @@ resource "aws_security_group" "sg_dse" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    #cidr_blocks = ["${var.cidr_vpc}"]
   }
 
   # Port 8888 for opscenter access
@@ -142,6 +143,7 @@ resource "aws_security_group" "sg_dse" {
     to_port     = 8888
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    #cidr_blocks = ["${var.cidr_vpc}"]
   }
 
   # Promethius 
@@ -149,19 +151,24 @@ resource "aws_security_group" "sg_dse" {
     from_port   = 9090
     to_port     = 9090
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    #cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${var.cidr_vpc}"]
   }
+
   ingress {
     from_port   = 3000
     to_port     = 3000
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    #cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${var.cidr_vpc}"]
   }
+
   ingress {
     from_port   = 9103
     to_port     = 9103
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    #cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${var.cidr_vpc}"]
   }
 
   # CQL access from the VPC
@@ -169,6 +176,7 @@ resource "aws_security_group" "sg_dse" {
     from_port   = 9042
     to_port     = 9042
     protocol    = "tcp"
+    #cidr_blocks = ["0.0.0.0/0"]
     cidr_blocks = ["${var.cidr_vpc}"]
   }
 
@@ -177,6 +185,16 @@ resource "aws_security_group" "sg_dse" {
     from_port   = 7000
     to_port     = 7000
     protocol    = "tcp"
+    #cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${var.cidr_vpc}"]
+  }
+ 
+  # jmx communication from VPC
+  ingress {
+    from_port   = 7199
+    to_port     = 7199
+    protocol    = "tcp"
+    #cidr_blocks = ["0.0.0.0/0"]
     cidr_blocks = ["${var.cidr_vpc}"]
   }
 
@@ -185,6 +203,7 @@ resource "aws_security_group" "sg_dse" {
     from_port   = 61620
     to_port     = 61620
     protocol    = "tcp"
+    #cidr_blocks = ["0.0.0.0/0"]
     cidr_blocks = ["${var.cidr_vpc}"]
   }
 
@@ -193,6 +212,7 @@ resource "aws_security_group" "sg_dse" {
     from_port   = 61621
     to_port     = 61621
     protocol    = "tcp"
+    #cidr_blocks = ["0.0.0.0/0"]
     cidr_blocks = ["${var.cidr_vpc}"]
   }
 
@@ -233,7 +253,7 @@ resource "aws_key_pair" "ec2key" {
 
 resource "aws_instance" "bastion" {
   ami                    = "${var.ami["amazon-linux"]}"
-  instance_type          = "i3.large"
+  instance_type          = "${var.instance_type}"
   subnet_id              = "${aws_subnet.subnet_public.id}"
   vpc_security_group_ids = ["${aws_security_group.sg_dse.id}"]
   key_name               = "${aws_key_pair.ec2key.key_name}"
@@ -260,6 +280,56 @@ resource "aws_instance" "bastion" {
       "echo '${file(var.private_key_path)}' > ~/.ssh/id_rsa",
       "chmod 400 ~/.ssh/id_rsa",
       "echo 'export TERM=xterm-256color' >> ~/.bash_profile",
+      "sudo yum install -y java-1.8.0-openjdk.x86_64 git",
+      "for CPUFREQ in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do     [ -f $CPUFREQ ] || continue;     echo -n performance > $CPUFREQ; done",
+      "sudo parted -a optimal -s /dev/nvme0n1 mklabel gpt mkpart Data 'xfs' '0%' '100%'",
+      "sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm",
+      "sudo yum-config-manager --enable epel",
+      "sudo yum erase -y 'ntp*'",
+      "sudo yum install -y chrony",
+      "sudo service chronyd start",
+      "sudo chkconfig chronyd on",
+      "echo 'net.ipv4.tcp_keepalive_time=60' |sudo tee -a /etc/sysctl.conf",
+      "echo 'net.ipv4.tcp_keepalive_probes=3' |sudo tee -a /etc/sysctl.conf",
+      "echo 'net.ipv4.tcp_keepalive_intvl=10' |sudo tee -a /etc/sysctl.conf",
+      "echo 'net.core.rmem_max=16777216'|sudo tee -a /etc/sysctl.conf",
+      "echo 'net.core.wmem_max=16777216' |sudo tee -a /etc/sysctl.conf",
+      "echo 'net.core.rmem_default=16777216' |sudo tee -a /etc/sysctl.conf",
+      "echo 'net.core.wmem_default=16777216' |sudo tee -a /etc/sysctl.conf",
+      "echo 'net.core.optmem_max=40960' |sudo tee -a /etc/sysctl.conf",
+      "echo 'net.ipv4.tcp_rmem=4096 87380 16777216' |sudo tee -a /etc/sysctl.conf",
+      "echo 'net.ipv4.tcp_wmem=4096 65536 16777216'  |sudo tee -a /etc/sysctl.conf",
+      "echo 'vm.max_map_count = 1048575'  |sudo tee -a /etc/sysctl.conf",
+      "echo 'vm.dirty_background_bytes = 10485760'  |sudo tee -a /etc/sysctl.conf",
+      "echo 'vm.dirty_bytes = 1073741824'  |sudo tee -a /etc/sysctl.conf",
+      "echo 'vm.zone_reclaim_mode = 0'  |sudo tee -a /etc/sysctl.conf",
+      "sudo sysctl -p",
+      "sudo mkfs.xfs -f /dev/nvme0n1p1",
+      "sudo mkdir -p /var/lib/cassandra/data",
+      "echo '/dev/nvme0n1p1 /var/lib/cassandra/data xfs defaults,noatime 1 1' |sudo tee -a /etc/fstab",
+      "sudo mount -a",
+      "echo 'cassandra - memlock unlimited' | sudo tee -a /etc/security/limits.d/cassandra.conf",
+      "echo 'cassandra - nofile 1048576' | sudo tee -a /etc/security/limits.d/cassandra.conf",
+      "echo 'cassandra - nproc 32768' | sudo tee -a /etc/security/limits.d/cassandra.conf",
+      "echo 'cassandra - as unlimited' | sudo tee -a /etc/security/limits.d/cassandra.conf",
+      "echo never | sudo tee -a /sys/kernel/mm/transparent_hugepage/defrag",
+      "echo 'sudo blockdev --setra 8 /dev/nvme0n1' | sudo tee -a /etc/rc.local",
+      "sudo chmod +x /etc/rc.local",
+      "sudo yum install -y libaio",
+      "echo '[datastax]' |sudo tee -a /etc/yum.repos.d/datastax.repo",
+      "echo 'name=DataStax Repo for DataStax Enterprise' | sudo tee -a /etc/yum.repos.d/datastax.repo",
+      "echo 'baseurl=https://rpm.datastax.com/enterprise/' | sudo tee -a /etc/yum.repos.d/datastax.repo",
+      "echo 'enabled=1' | sudo tee -a /etc/yum.repos.d/datastax.repo",
+      "echo 'gpgcheck=0' | sudo tee -a /etc/yum.repos.d/datastax.repo",
+      "sudo rpm --import https://rpm.datastax.com/rpm/repo_key",
+      "sudo yum install -y opscenter",
+      "sudo service opscenterd start",
+      "sudo yum update -y",
+      "curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo",
+      "sudo yum install -y sbt",
+      "sudo chown ec2-user /var/lib/cassandra/data && ln -snfv /var/lib/cassandra/data data && cd data",
+      "git clone https://github.com/crdiaz324/gatling_cassandra_timeslice.git",
+      "cd gatling_cassandra_timeslice && git checkout nr-dev && sbt assembly"
     ]
   }
 }
@@ -274,7 +344,7 @@ module "dse_cluster" {
   associate_public_ip_address = "false"
 
   ami                    = "${var.ami["amazon-linux"]}"
-  instance_type          = "${var.instance_type["i3-xlarge"]}"
+  instance_type          = "${var.instance_type}"
   key_name               = "${aws_key_pair.ec2key.key_name}"
   monitoring             = false
   vpc_security_group_ids = ["${aws_security_group.sg_dse.id}"]
